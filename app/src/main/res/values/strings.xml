@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Kitu</string>
+    <string name="header_object">Object</string>
+    <string name="header_count">Count</string>
+</resources>
