@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- toolbar -->
+    <string name="take_photo">사진 촬영</string>
+    <string name="close">닫기</string>
+    <string name="object_detection">AI 객체 인식</string>
+
+    <!-- grid column -->
+    <string name="app_name">Kitu</string>
+    <string name="header_object">객체 인식</string>
+    <string name="header_count">개수</string>
+</resources>

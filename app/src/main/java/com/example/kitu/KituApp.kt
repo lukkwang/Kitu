@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -85,7 +86,7 @@ fun toolBarArea(modifier: Modifier = Modifier)
     IconButton(onClick = { /* 닫기 동작 */ }) {
         Icon(
             imageVector = Icons.Default.Close,
-            contentDescription = "닫기"
+            contentDescription = stringResource(R.string.close)
         )
     }
 
@@ -93,7 +94,7 @@ fun toolBarArea(modifier: Modifier = Modifier)
     IconButton(onClick = { /* 촬영 동작 */ }) {
         Icon(
             imageVector = Icons.Default.PhotoCamera,
-            contentDescription = "사진 촬영"
+            contentDescription = stringResource(R.string.take_photo)
         )
     }
 
@@ -101,7 +102,7 @@ fun toolBarArea(modifier: Modifier = Modifier)
     IconButton(onClick = { /* AI 객체인식 동작 */ }) {
         Icon(
             imageVector = Icons.Default.AutoAwesome,
-            contentDescription = "AI 객체인식"
+            contentDescription = stringResource(R.string.object_detection)
         )
     }
 }
@@ -119,7 +120,12 @@ fun gridArea(modifier: Modifier = Modifier)
     val records = listOf(
         listOf("데이터 A-1", "A-2"),
         listOf("데이터 B-1", "B-2"),
-        listOf("데이터 C-1", "C-2")
+        listOf("데이터 C-1", "C-2"),
+    )
+
+    val columnAlignment = listOf(
+        Alignment.CenterStart,
+        Alignment.CenterEnd
     )
 
     val scrollState = rememberScrollState()
@@ -135,8 +141,8 @@ fun gridArea(modifier: Modifier = Modifier)
             modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.DarkGray)
-                            .padding(vertical = 2.dp, horizontal = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            .padding(vertical = 1.dp, horizontal = 1.dp),
+            horizontalArrangement = Arrangement.spacedBy(1.dp)
         ) {
             headers.forEachIndexed {i, (headerTitle, headerWeight) ->
                 Box(
@@ -160,7 +166,8 @@ fun gridArea(modifier: Modifier = Modifier)
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(scrollState)
-                .padding(1.dp),
+                .padding(1.dp)
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
 
@@ -170,15 +177,15 @@ fun gridArea(modifier: Modifier = Modifier)
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(1.dp) // 셀 사이 세로선 간격
                 ) {
-                    rowItems.forEachIndexed { index, cellText ->
-                        val cellWeight = headers.get(index).second
+                    rowItems.forEachIndexed { i, cellText ->
+                        val cellWeight = headers.get(i).second
 
                         Box(
                             modifier = Modifier
                                 .weight(cellWeight)
-                                .background(Color.White) // 셀 배경색
+                                .background(Color.White)
                                 .padding(vertical = 12.dp, horizontal = 12.dp),
-                            contentAlignment = Alignment.CenterStart
+                            contentAlignment = columnAlignment.get(i)
                         ) {
                             Text(text = cellText)
                         }

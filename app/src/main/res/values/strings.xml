@@ -1,5 +1,11 @@
 <resources>
+    <!-- toolbar -->
+    <string name="close">Close</string>
+    <string name="take_photo">Take photo</string>
+    <string name="object_detection">AI object detection</string>
+
+    <!-- grid column -->
     <string name="app_name">Kitu</string>
-    <string name="header_object">Object</string>
+    <string name="header_object">Object detection</string>
     <string name="header_count">Count</string>
 </resources>
