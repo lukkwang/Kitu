@@ -73,7 +73,7 @@ fun KituAppLayout(modifier: Modifier = Modifier)
 @Composable
 fun cameraArea()
 {
-
+    //
 }
 
 
