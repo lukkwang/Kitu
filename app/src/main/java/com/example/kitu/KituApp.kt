@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,7 +26,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.kitu.ui.theme.KituTheme
-import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun KituApp()
@@ -82,7 +80,7 @@ fun cameraArea()
 @Composable
 fun toolBarArea(modifier: Modifier = Modifier)
 {
-    // 1. 닫기 버튼
+    // close button
     IconButton(onClick = { /* 닫기 동작 */ }) {
         Icon(
             imageVector = Icons.Default.Close,
@@ -90,7 +88,7 @@ fun toolBarArea(modifier: Modifier = Modifier)
         )
     }
 
-    // 2. 사진 촬영 버튼
+    // take photo button
     IconButton(onClick = { /* 촬영 동작 */ }) {
         Icon(
             imageVector = Icons.Default.PhotoCamera,
@@ -98,7 +96,7 @@ fun toolBarArea(modifier: Modifier = Modifier)
         )
     }
 
-    // 3. AI 객체인식 실행 버튼
+    // AI object detection button
     IconButton(onClick = { /* AI 객체인식 동작 */ }) {
         Icon(
             imageVector = Icons.Default.AutoAwesome,
@@ -134,7 +132,7 @@ fun gridArea(modifier: Modifier = Modifier)
         modifier = modifier
             .background(Color.LightGray),
             //.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp) // 헤더와 본문 사이 여백을 없앰 (기본값이 0이므로 생략 가능)
+            verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         // header
         Row(
@@ -172,10 +170,9 @@ fun gridArea(modifier: Modifier = Modifier)
         ) {
 
             records.forEach { rowItems ->
-                // 각 행(Row)을 생성
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(1.dp) // 셀 사이 세로선 간격
+                    horizontalArrangement = Arrangement.spacedBy(1.dp)
                 ) {
                     rowItems.forEachIndexed { i, cellText ->
                         val cellWeight = headers.get(i).second
