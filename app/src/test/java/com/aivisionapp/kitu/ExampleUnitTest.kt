@@ -1,4 +1,4 @@
-package com.example.kitu
+package com.aivisionapp.kitu
 
 import org.junit.Test
 

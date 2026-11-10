@@ -1,4 +1,4 @@
-package com.example.kitu.ui.theme
+package com.aivisionapp.kitu.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -9,4 +9,7 @@
     <string name="app_name">Kitu</string>
     <string name="header_object">객체 인식</string>
     <string name="header_count">개수</string>
+
+    <!-- permission -->
+    <string name="permission_camera">카메라 권한이 필요합니다.</string>
 </resources>

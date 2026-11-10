@@ -1,5 +1,11 @@
-package com.example.kitu
+package com.aivisionapp.kitu
 
+import android.util.Log
+import androidx.camera.compose.CameraXViewfinder
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.SurfaceRequest
+import androidx.camera.core.Preview as CameraXPreview
+import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,17 +25,31 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.kitu.ui.theme.KituTheme
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aivisionapp.kitu.ui.KituViewModel
+import com.aivisionapp.kitu.ui.theme.KituTheme
+import com.aivisionapp.kitu.utils.rememberCameraPermissionState
+
+
 
 @Composable
-fun KituApp()
-{
+fun KituApp(
+    kituViewModel: KituViewModel = viewModel(factory = KituViewModel.Factory)
+) {
     KituAppLayout()
 }
 
@@ -46,7 +66,12 @@ fun KituAppLayout(modifier: Modifier = Modifier)
                         .weight(0.5f)
                         .background(Color.DarkGray)
         ) {
-            cameraArea()
+            // check Permissions ans preview
+            if (rememberCameraPermissionState() && !LocalInspectionMode.current) {  // perssion is true and preview is false
+                cameraArea(modifier)
+            } else {
+                Text(text = stringResource(R.string.permission_camera))
+            }
         }
 
         // toolbar
@@ -71,9 +96,43 @@ fun KituAppLayout(modifier: Modifier = Modifier)
 
 
 @Composable
-fun cameraArea()
-{
+fun cameraArea(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
+    var surfaceRequest by remember { mutableStateOf<SurfaceRequest?>(null) }
+
+    LaunchedEffect(lifecycleOwner) {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        try {
+            val cameraProvider = cameraProviderFuture.get()
+
+            val preview = CameraXPreview.Builder().build().also {
+                it.setSurfaceProvider { request ->
+                    surfaceRequest = request
+                }
+            }
+
+            // back camera select
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+            cameraProvider.unbindAll()
+            cameraProvider.bindToLifecycle(
+                lifecycleOwner,
+                cameraSelector,
+                preview
+            )
+        } catch (exc: Exception) {
+            Log.e("Camera", "Camera binding fail", exc)
+        }
+    }
+
+    surfaceRequest?.let { request ->
+        CameraXViewfinder(
+            surfaceRequest = request,
+            modifier = modifier
+        )
+    }
 }
 
 

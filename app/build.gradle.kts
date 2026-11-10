@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.kitu"
+    namespace = "com.aivisionapp.kitu"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.kitu"
+        applicationId = "com.aivisionapp.kitu"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
@@ -53,4 +53,17 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation("androidx.compose.material:material-icons-extended:<version>")
+
+    // viewModel
+    val viewModelVersion = "2.6.2"
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:${viewModelVersion}")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${viewModelVersion}")
+
+    // CameraX core library
+    val cameraxVersion = "1.4.2"
+    implementation("androidx.camera:camera-core:${cameraxVersion}")
+    implementation("androidx.camera:camera-camera2:${cameraxVersion}")
+    implementation("androidx.camera:camera-lifecycle:${cameraxVersion}")
+    implementation("androidx.camera.viewfinder:viewfinder-compose:${cameraxVersion}")
+    implementation("androidx.camera:camera-compose:1.6.2")
 }
