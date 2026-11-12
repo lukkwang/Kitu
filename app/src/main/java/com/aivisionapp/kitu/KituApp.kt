@@ -1,16 +1,21 @@
 package com.aivisionapp.kitu
 
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.Preview as CameraXPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -26,13 +31,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
@@ -40,115 +49,198 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aivisionapp.kitu.ui.CameraUiState
 import com.aivisionapp.kitu.ui.KituViewModel
+import com.aivisionapp.kitu.ui.rememberCameraState
 import com.aivisionapp.kitu.ui.theme.KituTheme
 import com.aivisionapp.kitu.utils.rememberCameraPermissionState
-
 
 
 @Composable
 fun KituApp(
     kituViewModel: KituViewModel = viewModel(factory = KituViewModel.Factory)
 ) {
-    KituAppLayout()
+    val uiState by kituViewModel.uiState.collectAsState()
+
+    KituAppLayout(
+        uiState,
+        onImageCapturing = { kituViewModel.onImageCapturing() },
+        onImageCaptured = { bitMap -> kituViewModel.onImageCaptured(bitMap) },
+        onResetClick = { kituViewModel.resetToPreview() }
+    )
 }
 
 
 @Composable
-fun KituAppLayout(modifier: Modifier = Modifier)
-{
+fun KituAppLayout(
+    uiState: CameraUiState,
+    onImageCapturing: () -> Unit,
+    onImageCaptured: (Bitmap) -> Unit,
+    onResetClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val cameraState = rememberCameraState()
+
     Column(modifier = modifier)
     {
         // camera
         Box(
             modifier = modifier
-                        .fillMaxWidth()
-                        .weight(0.5f)
-                        .background(Color.DarkGray)
+                .fillMaxWidth()
+                .weight(0.5f)
+                .background(Color.DarkGray)
         ) {
             // check Permissions ans preview
             if (rememberCameraPermissionState() && !LocalInspectionMode.current) {  // perssion is true and preview is false
-                cameraArea(modifier)
+                cameraArea(
+                    uiState = uiState,
+                    cameraState = cameraState,
+                    modifier = modifier
+                )
             } else {
-                Text(text = stringResource(R.string.permission_camera))
+                Text(
+                    text = stringResource(R.string.permission_camera),
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
         }
 
         // toolbar
         Row(
             modifier = modifier
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .background(Color.LightGray),
+                .fillMaxWidth()
+                .height(40.dp)
+                .background(Color.LightGray),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceAround,
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
-            toolBarArea(modifier)
+            toolBarArea (
+                uiState,
+                cameraState = cameraState,
+                onImageCapturing = onImageCapturing,
+                onImageCaptured = onImageCaptured,
+                onResetClick = onResetClick,
+                modifier
+            )
         }
 
         // grid
         gridArea(modifier = modifier
-                                .fillMaxWidth()
-                                .weight(0.5f)
-                                .padding(horizontal = 16.dp, vertical = 12.dp))
+            .fillMaxWidth()
+            .weight(0.5f)
+            .padding(horizontal = 16.dp, vertical = 12.dp))
     }
 }
 
 
 @Composable
-fun cameraArea(modifier: Modifier = Modifier) {
+fun cameraArea(
+    uiState: CameraUiState,
+    cameraState: com.aivisionapp.kitu.ui.CameraState,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var surfaceRequest by remember { mutableStateOf<SurfaceRequest?>(null) }
 
-    LaunchedEffect(lifecycleOwner) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        try {
-            val cameraProvider = cameraProviderFuture.get()
+    // only preview state in Camera preview
+    LaunchedEffect(lifecycleOwner, uiState) {
+        if (uiState is CameraUiState.Preview) {
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            try {
+                val cameraProvider = cameraProviderFuture.get()
 
-            val preview = CameraXPreview.Builder().build().also {
-                it.setSurfaceProvider { request ->
-                    surfaceRequest = request
+                val preview = CameraXPreview.Builder().build().also {
+                    it.setSurfaceProvider { request ->
+                        surfaceRequest = request
+                    }
                 }
+
+                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    cameraState.imageCapture
+                )
+            } catch (exc: Exception) {
+                Log.e("Camera", "Camera binding fail", exc)
             }
-
-            // back camera select
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-            cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
-                lifecycleOwner,
-                cameraSelector,
-                preview
-            )
-        } catch (exc: Exception) {
-            Log.e("Camera", "Camera binding fail", exc)
         }
     }
 
-    surfaceRequest?.let { request ->
-        CameraXViewfinder(
-            surfaceRequest = request,
-            modifier = modifier
-        )
+    // Preview vs Captured image
+    when (uiState) {
+        is CameraUiState.Preview -> {
+            surfaceRequest?.let { request ->
+                CameraXViewfinder(
+                    surfaceRequest = request,
+                    modifier = modifier
+                )
+            }
+        }
+        is CameraUiState.Capturing -> {
+            val flashAlpha by animateFloatAsState(
+                targetValue = if (uiState == CameraUiState.Capturing) 1f else 0f,
+                animationSpec = tween(durationMillis = 150),
+                label = "ShutterFlash"
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(flashAlpha)
+                    .background(Color.White)
+                    //.background(Color.White.copy(alpha = 0.8f))
+            )
+        }
+        is CameraUiState.Captured -> {
+            Image(
+                bitmap = uiState.bitmap.asImageBitmap(),
+                contentDescription = stringResource(R.string.take_photo),
+                modifier = modifier,
+                contentScale = ContentScale.Crop
+            )
+        }
     }
-}
+}  // fun cameraArea(
 
 
 @Composable
-fun toolBarArea(modifier: Modifier = Modifier)
-{
+fun toolBarArea(
+    uiState: CameraUiState,
+    cameraState: com.aivisionapp.kitu.ui.CameraState,
+    onImageCapturing: () -> Unit,
+    onImageCaptured: (Bitmap) -> Unit,
+    onResetClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isCloseEnabled = uiState is CameraUiState.Captured
+    val isCaptureEnabled = uiState is CameraUiState.Preview
+
     // close button
-    IconButton(onClick = { /* 닫기 동작 */ }) {
+    IconButton(
+        onClick = onResetClick,
+        enabled = isCloseEnabled
+    ) {
         Icon(
             imageVector = Icons.Default.Close,
             contentDescription = stringResource(R.string.close)
         )
     }
 
-    // take photo button
-    IconButton(onClick = { /* 촬영 동작 */ }) {
+    // capture button
+    IconButton(
+        onClick = {
+            onImageCapturing()
+            cameraState.takeCapture(onImageCaptured)
+        },
+        enabled = isCaptureEnabled
+    ) {
         Icon(
             imageVector = Icons.Default.PhotoCamera,
             contentDescription = stringResource(R.string.take_photo)
@@ -169,8 +261,8 @@ fun toolBarArea(modifier: Modifier = Modifier)
 fun gridArea(modifier: Modifier = Modifier)
 {
     val headers = listOf(
-                    stringResource(id = R.string.header_object) to 8f,
-                    stringResource(id = R.string.header_count) to 2f
+        stringResource(id = R.string.header_object) to 8f,
+        stringResource(id = R.string.header_count) to 2f
     )
 
     // temp
@@ -190,23 +282,23 @@ fun gridArea(modifier: Modifier = Modifier)
     Column(
         modifier = modifier
             .background(Color.LightGray),
-            //.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+        //.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         // header
         Row(
             modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.DarkGray)
-                            .padding(vertical = 1.dp, horizontal = 1.dp),
+                .fillMaxWidth()
+                .background(Color.DarkGray)
+                .padding(vertical = 1.dp, horizontal = 1.dp),
             horizontalArrangement = Arrangement.spacedBy(1.dp)
         ) {
             headers.forEachIndexed {i, (headerTitle, headerWeight) ->
                 Box(
                     modifier = Modifier
-                    .weight(headerWeight)
-                    //.height(40.dp)
-                    .background(Color.LightGray),
+                        .weight(headerWeight)
+                        //.height(40.dp)
+                        .background(Color.LightGray),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -254,11 +346,15 @@ fun gridArea(modifier: Modifier = Modifier)
 }  // fun gridArea(modifier: Modifier = Modifier)
 
 
-
 @Preview(showBackground = true)
 @Composable
 fun KituAppLayoutPreview() {
     KituTheme {
-        KituAppLayout()
+        KituAppLayout(
+            CameraUiState.Preview,
+            onImageCapturing = {},
+            onImageCaptured = {},
+            onResetClick = {}
+        )
     }
 }
