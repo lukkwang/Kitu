@@ -34,6 +34,10 @@ android {
     buildFeatures {
         compose = true
     }
+
+    androidResources {
+        generateLocaleConfig = true
+    }
 }
 
 dependencies {
@@ -66,4 +70,8 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:${cameraxVersion}")
     implementation("androidx.camera.viewfinder:viewfinder-compose:${cameraxVersion}")
     implementation("androidx.camera:camera-compose:1.6.2")
+
+    // machine vision
+    implementation("org.pytorch:pytorch_android_lite:2.1.0")  // pytorch lite
+    implementation("org.pytorch:pytorch_android_torchvision_lite:2.1.0")
 }
