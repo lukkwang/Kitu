@@ -9,12 +9,14 @@ import androidx.camera.core.Preview as CameraXPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,8 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -49,6 +54,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aivisionapp.kitu.config.AppConfig
+import com.aivisionapp.kitu.ui.CameraState
 import com.aivisionapp.kitu.ui.CameraUiState
 import com.aivisionapp.kitu.ui.KituViewModel
 import com.aivisionapp.kitu.ui.rememberCameraState
@@ -60,13 +67,16 @@ import com.aivisionapp.kitu.utils.rememberCameraPermissionState
 fun KituApp(
     kituViewModel: KituViewModel = viewModel(factory = KituViewModel.Factory)
 ) {
+    val context = LocalContext.current
+
     val uiState by kituViewModel.uiState.collectAsState()
 
     KituAppLayout(
         uiState,
         onImageCapturing = { kituViewModel.onImageCapturing() },
         onImageCaptured = { bitMap -> kituViewModel.onImageCaptured(bitMap) },
-        onResetClick = { kituViewModel.resetToPreview() }
+        onResetClick = { kituViewModel.resetToPreview() },
+        onRunDetection = { kituViewModel.runObjectDetection(context) }
     )
 }
 
@@ -77,6 +87,7 @@ fun KituAppLayout(
     onImageCapturing: () -> Unit,
     onImageCaptured: (Bitmap) -> Unit,
     onResetClick: () -> Unit,
+    onRunDetection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val cameraState = rememberCameraState()
@@ -87,7 +98,7 @@ fun KituAppLayout(
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .weight(0.5f)
+                .aspectRatio(3f / 4f)  // 4:3 ratio
                 .background(Color.DarkGray)
         ) {
             // check Permissions ans preview
@@ -121,6 +132,7 @@ fun KituAppLayout(
                 onImageCapturing = onImageCapturing,
                 onImageCaptured = onImageCaptured,
                 onResetClick = onResetClick,
+                onRunDetection = onRunDetection,
                 modifier
             )
         }
@@ -128,7 +140,7 @@ fun KituAppLayout(
         // grid
         gridArea(modifier = modifier
             .fillMaxWidth()
-            .weight(0.5f)
+            .weight(1f)  // occpy all remain area
             .padding(horizontal = 16.dp, vertical = 12.dp))
     }
 }
@@ -137,7 +149,7 @@ fun KituAppLayout(
 @Composable
 fun cameraArea(
     uiState: CameraUiState,
-    cameraState: com.aivisionapp.kitu.ui.CameraState,
+    cameraState: CameraState,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -199,12 +211,27 @@ fun cameraArea(
             )
         }
         is CameraUiState.Captured -> {
-            Image(
-                bitmap = uiState.bitmap.asImageBitmap(),
-                contentDescription = stringResource(R.string.take_photo),
-                modifier = modifier,
-                contentScale = ContentScale.Crop
-            )
+            Box(modifier = modifier.fillMaxSize()) {
+                Image(
+                    bitmap = uiState.bitmap.asImageBitmap(),
+                    contentDescription = stringResource(R.string.take_photo),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // draw box to surrend deteced object
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    uiState.detections.forEach { detection ->
+                        val box = detection.boundingBox
+                        drawRect(
+                            color = AppConfig.BOUNDING_BOX_COLOR,
+                            topLeft = Offset(box.left, box.top),
+                            size = Size(box.width(), box.height()),
+                            style = Stroke(width = AppConfig.BOUNDING_BOX_STROKE_WIDTH)  // line width
+                        )
+                    }
+                }
+            }
         }
     }
 }  // fun cameraArea(
@@ -213,10 +240,11 @@ fun cameraArea(
 @Composable
 fun toolBarArea(
     uiState: CameraUiState,
-    cameraState: com.aivisionapp.kitu.ui.CameraState,
+    cameraState: CameraState,
     onImageCapturing: () -> Unit,
     onImageCaptured: (Bitmap) -> Unit,
     onResetClick: () -> Unit,
+    onRunDetection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isCloseEnabled = uiState is CameraUiState.Captured
@@ -236,7 +264,7 @@ fun toolBarArea(
     // capture button
     IconButton(
         onClick = {
-            onImageCapturing()
+            onImageCapturing()   // cover the preview by solid color
             cameraState.takeCapture(onImageCaptured)
         },
         enabled = isCaptureEnabled
@@ -354,7 +382,8 @@ fun KituAppLayoutPreview() {
             CameraUiState.Preview,
             onImageCapturing = {},
             onImageCaptured = {},
-            onResetClick = {}
+            onResetClick = {},
+            onRunDetection = {}
         )
     }
 }

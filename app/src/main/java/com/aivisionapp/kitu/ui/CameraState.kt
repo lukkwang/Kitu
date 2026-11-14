@@ -15,56 +15,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.aivisionapp.kitu.config.AppConfig
 
 class CameraState(val context: Context)
 {
-    val activityManager = context.getSystemService(ActivityManager::class.java)
+    // camera capture image size is same as YOLO input image size
+    private val targetWidth = AppConfig.CAMERA_CAPTURE_SIZE_X
+    private val targetHeight = AppConfig.CAMERA_CAPTURE_SIZE_Y
 
-    val totalRamGB = if (activityManager != null) {
-        val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
-        memoryInfo.totalMem.toDouble() / (1024 * 1024 * 1024)
-    } else {
-        0.0
-    }
-
-    val isLowEndDevice = totalRamGB <= 2.0
-
-    val resolutionSelector = if (isLowEndDevice) {
-        ResolutionSelector.Builder()
-            .setResolutionStrategy(
-                ResolutionStrategy(
-                    Size(1280, 720),
-                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
-                )
+    val resolutionSelector: ResolutionSelector = ResolutionSelector.Builder()
+        .setResolutionStrategy(
+            ResolutionStrategy(
+                Size(targetWidth, targetHeight),
+                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
             )
-            .build()
-    } else {
-        null
-    }
+        )
+        .build()
 
-    val imageCapture: ImageCapture = run {
-        val isLowEndDevice = totalRamGB <= 2.0  // low spec device is 2GB RAM
-
-        val builder = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            .setJpegQuality(if (isLowEndDevice) 70 else 90)  // JPEG compress rate(default 100 -> 90~70)
-            .setFlashMode(ImageCapture.FLASH_MODE_OFF)
-
-        if (isLowEndDevice) {
-            val resolutionSelector = ResolutionSelector.Builder()
-                .setResolutionStrategy(
-                    ResolutionStrategy(
-                        Size(1280, 720),
-                        ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
-                    )
-                )
-                .build()
-            builder.setResolutionSelector(resolutionSelector)
-        }
-
-        builder.build()
-    }
+    val imageCapture: ImageCapture = ImageCapture.Builder()
+        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+        .setJpegQuality(AppConfig.jpegQuality)
+        .setFlashMode(ImageCapture.FLASH_MODE_OFF)
+        .setResolutionSelector(resolutionSelector)
+        .build()
 
     fun takeCapture(onImageCaptured: (Bitmap) -> Unit) {
         imageCapture.takePicture(
