@@ -132,8 +132,7 @@ fun KituAppLayout(
                 onImageCapturing = onImageCapturing,
                 onImageCaptured = onImageCaptured,
                 onResetClick = onResetClick,
-                onRunDetection = onRunDetection,
-                modifier
+                onRunDetection = onRunDetection
             )
         }
 
@@ -222,13 +221,15 @@ fun cameraArea(
                 // draw box to surrend deteced object
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     uiState.detections.forEach { detection ->
-                        val box = detection.boundingBox
-                        drawRect(
-                            color = AppConfig.BOUNDING_BOX_COLOR,
-                            topLeft = Offset(box.left, box.top),
-                            size = Size(box.width(), box.height()),
-                            style = Stroke(width = AppConfig.BOUNDING_BOX_STROKE_WIDTH)  // line width
-                        )
+                        val boxs = detection.boundingBoxList
+                        boxs.forEach { box ->
+                            drawRect(
+                                color = AppConfig.BOUNDING_BOX_COLOR,
+                                topLeft = Offset(box.left, box.top),
+                                size = Size(box.width(), box.height()),
+                                style = Stroke(width = AppConfig.BOUNDING_BOX_STROKE_WIDTH)  // line width
+                            )
+                        }
                     }
                 }
             }
@@ -244,16 +245,12 @@ fun toolBarArea(
     onImageCapturing: () -> Unit,
     onImageCaptured: (Bitmap) -> Unit,
     onResetClick: () -> Unit,
-    onRunDetection: () -> Unit,
-    modifier: Modifier = Modifier
+    onRunDetection: () -> Unit
 ) {
-    val isCloseEnabled = uiState is CameraUiState.Captured
-    val isCaptureEnabled = uiState is CameraUiState.Preview
-
     // close button
     IconButton(
         onClick = onResetClick,
-        enabled = isCloseEnabled
+        enabled = uiState is CameraUiState.Captured
     ) {
         Icon(
             imageVector = Icons.Default.Close,
@@ -264,10 +261,10 @@ fun toolBarArea(
     // capture button
     IconButton(
         onClick = {
-            onImageCapturing()   // cover the preview by solid color
+            onImageCapturing()   // cover the preview by solid color until capture is completee
             cameraState.takeCapture(onImageCaptured)
         },
-        enabled = isCaptureEnabled
+        enabled = uiState is CameraUiState.Preview
     ) {
         Icon(
             imageVector = Icons.Default.PhotoCamera,
@@ -276,7 +273,10 @@ fun toolBarArea(
     }
 
     // AI object detection button
-    IconButton(onClick = { /* AI 객체인식 동작 */ }) {
+    IconButton(
+        onClick = onRunDetection,
+        enabled = uiState is CameraUiState.Captured
+    ) {
         Icon(
             imageVector = Icons.Default.AutoAwesome,
             contentDescription = stringResource(R.string.object_detection)

@@ -12,7 +12,7 @@ object AppConfig {
     // yolo
     const val MODEL_INPUT_SIZE_X = 640
     const val MODEL_INPUT_SIZE_Y = 640
-    const val MODEL_FILE_NAME = "yolov8n.torchscript"
+    const val MODEL_FILE_NAME = "yolov8n_android.ptl"
 
     // object detection box
     val BOUNDING_BOX_COLOR = Color.Red
