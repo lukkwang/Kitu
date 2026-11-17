@@ -167,7 +167,12 @@ fun KituAppLayout(
                     onErrorPopClose(uiState.bitmap)
                 },
                 text = {
-                    Text(stringResource(R.string.error_object_detect))
+                    Text(stringResource(
+                        if (uiState.bitmap != null)
+                                R.string.error_object_detect
+                            else
+                                R.string.error_camera_phpto_capture)
+                    )
                 },
                 confirmButton = {
                     Button(onClick = {
@@ -283,7 +288,7 @@ fun cameraArea(
                 }
             }
 
-            if (uiState is CameraUiState.Detecting) {
+            if (uiState is CameraUiState.Detecting) {  // circular pregress
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
