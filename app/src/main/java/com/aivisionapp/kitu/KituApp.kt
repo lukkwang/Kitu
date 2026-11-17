@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +65,7 @@ import com.aivisionapp.kitu.ui.KituViewModel
 import com.aivisionapp.kitu.ui.rememberCameraState
 import com.aivisionapp.kitu.ui.theme.KituTheme
 import com.aivisionapp.kitu.utils.rememberCameraPermissionState
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -253,7 +256,7 @@ fun cameraArea(
                 else -> null
             }
 
-            if (bitmap != null) {
+            if (bitmap != null) {  // CameraUiState.Captured or CameraUiState.Detected
                 Box(modifier = modifier.fillMaxSize()) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
@@ -279,6 +282,15 @@ fun cameraArea(
                     }
                 }
             }
+
+            if (uiState is CameraUiState.Detecting) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
     }  // when (uiState)
 }  // fun cameraArea(
@@ -294,6 +306,8 @@ fun toolBarArea(
     onErrorCameraPhotoCapture: () -> Unit,
     onRunDetection: () -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
     // close button
     IconButton(
         onClick = onResetClick,
@@ -309,7 +323,14 @@ fun toolBarArea(
     IconButton(
         onClick = {
             onImageCapturing()   // cover the preview by solid color until capture is completee
-            cameraState.takeCapture(onImageCaptured, onErrorCameraPhotoCapture)
+            coroutineScope.launch {
+                try {
+                    val bitmap = cameraState.takeCapture()
+                    onImageCaptured(bitmap)
+                } catch (e: Exception) {
+                    onErrorCameraPhotoCapture()
+                }
+            }
         },
         enabled = uiState is CameraUiState.Preview
     ) {

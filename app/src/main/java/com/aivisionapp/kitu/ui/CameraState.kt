@@ -15,9 +15,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.aivisionapp.kitu.config.AppConfig
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resumeWithException
 
-class CameraState(val context: Context)
-{
+class CameraState(val context: Context) {
     // camera capture image size is same as YOLO input image size
     private val targetWidth = AppConfig.CAMERA_CAPTURE_SIZE_X
     private val targetHeight = AppConfig.CAMERA_CAPTURE_SIZE_Y
@@ -38,51 +39,58 @@ class CameraState(val context: Context)
         .setResolutionSelector(resolutionSelector)
         .build()
 
-    fun takeCapture(
-        onImageCaptured: (Bitmap) -> Unit,
-        onErrorCameraPhotoCapture: () -> Unit
-    ) {
+    suspend fun takeCapture(): Bitmap = suspendCancellableCoroutine { continuation ->
         imageCapture.takePicture(
             ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageCapturedCallback() {
                 override fun onCaptureSuccess(image: ImageProxy) {
+                    try {
+                        val originalBitmap = image.toBitmap()
 
-                    val originalBitmap = image.toBitmap()
+                        // camera sensor rotate angle
+                        val rotationDegrees = image.imageInfo.rotationDegrees
 
-                    // camera sensor rotate angle
-                    val rotationDegrees = image.imageInfo.rotationDegrees
-
-                    val rotatedBitmap = if (rotationDegrees != 0) {
-                        val matrix = Matrix().apply {
-                            postRotate(rotationDegrees.toFloat())
+                        val rotatedBitmap = if (rotationDegrees != 0) {
+                            val matrix = Matrix().apply {
+                                postRotate(rotationDegrees.toFloat())
+                            }
+                            Bitmap.createBitmap(
+                                originalBitmap,
+                                0, 0,
+                                originalBitmap.width,
+                                originalBitmap.height,
+                                matrix,
+                                true
+                            ).also {
+                                if (it != originalBitmap)
+                                    originalBitmap.recycle()
+                            }
+                        } else {
+                            originalBitmap
                         }
-                        Bitmap.createBitmap(
-                            originalBitmap,
-                            0, 0,
-                            originalBitmap.width,
-                            originalBitmap.height,
-                            matrix,
-                            true
-                        ).also {
-                            if (it != originalBitmap)
-                                originalBitmap.recycle()
+
+                        image.close()
+                        if (continuation.isActive) {
+                            continuation.resumeWith(Result.success(rotatedBitmap))
                         }
-                    } else {
-                        originalBitmap
+                    } catch (e: Exception) {
+                        image.close()
+                        if (continuation.isActive) {
+                            continuation.resumeWithException(e)
+                        }
                     }
-
-                    image.close()
-                    onImageCaptured(rotatedBitmap)
                 }
-                override fun onError(exception: ImageCaptureException) {
-                    onErrorCameraPhotoCapture()
 
+                override fun onError(exception: ImageCaptureException) {
                     Log.e("Camera", "Photo capture failed", exception)
+                    if (continuation.isActive) {
+                        continuation.resumeWithException(exception)
+                    }
                 }
             }
         )
-    }  // fun takeCapture(onImageCaptured: (Bitmap) -> Unit)
-}  // class CameraState(val context: Context)
+    }
+}
 
 
 @Composable
