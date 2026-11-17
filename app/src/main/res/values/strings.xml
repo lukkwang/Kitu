@@ -1,14 +1,19 @@
 <resources>
-    <!-- toolbar -->
-    <string name="close">Close</string>
-    <string name="take_photo">Take photo</string>
-    <string name="object_detection">AI object detection</string>
-
-    <!-- grid column -->
     <string name="app_name">Kitu</string>
-    <string name="header_object">Object detection</string>
-    <string name="header_count">Count</string>
+
+    <!-- button -->
+    <string name="btn_close">Close</string>
+    <string name="btn_take_photo">Take photo</string>
+    <string name="btn_object_detection">AI object detection</string>
+
+    <!-- grid -->
+    <string name="grid_header_object">Object detection</string>
+    <string name="grid_header_count">Count</string>
 
     <!-- permission -->
     <string name="permission_camera">Camera permission is required.</string>
+
+    <!-- error -->
+    <string name="error_camera_phpto_capture">An error has occurred while camera phpto capture is working.</string>
+    <string name="error_object_detect">An error has occurred while detecting object is working.</string>
 </resources>

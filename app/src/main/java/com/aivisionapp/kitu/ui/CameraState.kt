@@ -1,6 +1,5 @@
 package com.aivisionapp.kitu.ui
 
-import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -39,7 +38,10 @@ class CameraState(val context: Context)
         .setResolutionSelector(resolutionSelector)
         .build()
 
-    fun takeCapture(onImageCaptured: (Bitmap) -> Unit) {
+    fun takeCapture(
+        onImageCaptured: (Bitmap) -> Unit,
+        onErrorCameraPhotoCapture: () -> Unit
+    ) {
         imageCapture.takePicture(
             ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageCapturedCallback() {
@@ -73,6 +75,8 @@ class CameraState(val context: Context)
                     onImageCaptured(rotatedBitmap)
                 }
                 override fun onError(exception: ImageCaptureException) {
+                    onErrorCameraPhotoCapture()
+
                     Log.e("Camera", "Photo capture failed", exception)
                 }
             }

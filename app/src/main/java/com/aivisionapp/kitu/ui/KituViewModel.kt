@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aivisionapp.kitu.KituApplication
+import com.aivisionapp.kitu.R
 import com.aivisionapp.kitu.config.AppConfig
 import com.aivisionapp.kitu.utils.getCurrentAppLanguage
 import kotlinx.coroutines.Dispatchers
@@ -24,8 +25,6 @@ import org.pytorch.LiteModuleLoader
 import org.pytorch.torchvision.TensorImageUtils
 import java.io.File
 import java.io.FileOutputStream
-
-
 
 // object detection temp result
 data class ParsedBox(
@@ -45,10 +44,19 @@ data class DetectionResult(
 
 sealed interface CameraUiState {
     object Preview : CameraUiState
-    object Capturing : CameraUiState  // capture start (cover the preview by solid color)
-    data class Captured(  // capture end
+    object Capturing : CameraUiState  // camera photo capture start (cover the preview by solid color)
+    data class Captured(
+        val bitmap: Bitmap,
+        val errorMessage: String? = null
+    ) : CameraUiState  // camera photo capture end
+    data class Detecting(val bitmap: Bitmap) : CameraUiState
+    data class Detected(
         val bitmap: Bitmap,
         val detections: List<DetectionResult> = emptyList()
+    ) : CameraUiState
+    data class Error(  // there are two error cases : phpoto capture error (no bitmap),  detecint error
+        val bitmap: Bitmap?,  // only exist when state is Detected
+        val messageResId: Int  // Error Message Resource ID
     ) : CameraUiState
 }
 
@@ -62,12 +70,12 @@ class KituViewModel : ViewModel()
     val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()
     private var module: org.pytorch.Module? = null
 
-    fun onImageCapturing() {
+    fun setCapturingState() {
         _uiState.value = CameraUiState.Capturing
     }
 
     // Called when an image is successfully captured and loaded into memory
-    fun onImageCaptured(bitmap: Bitmap) {
+    fun setCapturedState(bitmap: Bitmap) {
         _uiState.value = CameraUiState.Captured(bitmap)
     }
 
@@ -75,6 +83,20 @@ class KituViewModel : ViewModel()
     fun resetToPreview() {
         _uiState.value = CameraUiState.Preview
     }
+
+    fun setErrorState(bitmap: Bitmap?) {
+        _uiState.value = CameraUiState.Error(
+            bitmap = bitmap,
+            messageResId = if (bitmap != null) R.string.error_object_detect else R.string.error_camera_phpto_capture
+        )
+    }
+
+//    fun setErrorToPrevState(bitmap: Bitmap) {
+//        if (bitmap != null)
+//            _uiState.value = CameraUiState.Captured(bitmap)
+//        else
+//            _uiState.value = CameraUiState.Preview
+//    }
 
     private suspend fun loadModel(context: Context) {
         if (module != null) return
@@ -98,6 +120,10 @@ class KituViewModel : ViewModel()
 
         if (currentState !is CameraUiState.Captured) return
 
+        val currentBitmap = currentState.bitmap
+
+        _uiState.value = CameraUiState.Detecting(currentBitmap)
+
         viewModelScope.launch {
             try {
                 // model load
@@ -106,10 +132,9 @@ class KituViewModel : ViewModel()
                 if (module == null) return@launch
 
                 val finalDetections = withContext(Dispatchers.Default) {
-                    val bitmap = currentState.bitmap
                     // resize photo image to YOLOv8 standard input size (640x640)
                     val resizedBitmap = Bitmap.createScaledBitmap(
-                        bitmap,
+                        currentBitmap,
                         AppConfig.MODEL_INPUT_SIZE_X,
                         AppConfig.MODEL_INPUT_SIZE_Y,
                         true
@@ -171,9 +196,9 @@ class KituViewModel : ViewModel()
                             val bottom = yCenter + h / 2f
 
                             // 원본 비트맵 크기에 맞게 좌표 스케일링
-                            val scaleX = bitmap.width.toFloat() / AppConfig.MODEL_INPUT_SIZE_X.toFloat()
+                            val scaleX = currentBitmap.width.toFloat() / AppConfig.MODEL_INPUT_SIZE_X.toFloat()
                             val scaleY =
-                                bitmap.height.toFloat() / AppConfig.MODEL_INPUT_SIZE_Y.toFloat()
+                                currentBitmap.height.toFloat() / AppConfig.MODEL_INPUT_SIZE_Y.toFloat()
 
                             val scaledRect = RectF(
                                 left * scaleX,
@@ -211,9 +236,15 @@ class KituViewModel : ViewModel()
                     results
                 }
 
-                _uiState.value = currentState.copy(detections = finalDetections)
+                _uiState.value = CameraUiState.Detected(
+                    bitmap = currentBitmap,
+                    detections = finalDetections
+                )
+
                 Log.d("YOLO", "Object detection completed. Detected items: ${finalDetections.size}")
             } catch (e: Exception) {
+                setErrorState(currentBitmap)
+
                 Log.e("YOLO", "object detection failed", e)
             }
         }  // viewModelScope.launch

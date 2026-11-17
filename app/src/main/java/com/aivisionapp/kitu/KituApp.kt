@@ -28,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -73,10 +75,17 @@ fun KituApp(
 
     KituAppLayout(
         uiState,
-        onImageCapturing = { kituViewModel.onImageCapturing() },
-        onImageCaptured = { bitMap -> kituViewModel.onImageCaptured(bitMap) },
+        onImageCapturing = { kituViewModel.setCapturingState() },
+        onImageCaptured = { bitMap -> kituViewModel.setCapturedState(bitMap) },
         onResetClick = { kituViewModel.resetToPreview() },
-        onRunDetection = { kituViewModel.runObjectDetection(context) }
+        onRunDetection = { kituViewModel.runObjectDetection(context) },
+        onErrorCameraPhotoCapture = { kituViewModel.setErrorState(null) },
+        onErrorPopClose = { bitMap: Bitmap? ->
+            if (bitMap != null)
+                kituViewModel.setCapturedState(bitMap)
+            else
+                kituViewModel.resetToPreview()
+        }
     )
 }
 
@@ -88,61 +97,86 @@ fun KituAppLayout(
     onImageCaptured: (Bitmap) -> Unit,
     onResetClick: () -> Unit,
     onRunDetection: () -> Unit,
+    onErrorCameraPhotoCapture: () -> Unit,
+    onErrorPopClose: (Bitmap?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val cameraState = rememberCameraState()
 
-    Column(modifier = modifier)
-    {
-        // camera
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .aspectRatio(3f / 4f)  // 4:3 ratio
-                .background(Color.DarkGray)
-        ) {
-            // check Permissions ans preview
-            if (rememberCameraPermissionState() && !LocalInspectionMode.current) {  // perssion is true and preview is false
-                cameraArea(
-                    uiState = uiState,
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = modifier)
+        {
+            // camera
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .aspectRatio(3f / 4f)  // 4:3 ratio
+                    .background(Color.DarkGray)
+            ) {
+                // check Permissions ans preview
+                if (rememberCameraPermissionState() && !LocalInspectionMode.current) {  // perssion is true and preview is false
+                    cameraArea(
+                        uiState = uiState,
+                        cameraState = cameraState,
+                        modifier = modifier
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.permission_camera),
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            }
+
+            // toolbar
+            Row(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+                    .background(Color.LightGray),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceAround,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                toolBarArea(
+                    uiState,
                     cameraState = cameraState,
-                    modifier = modifier
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.permission_camera),
-                    color = Color.White,
-                    modifier = Modifier.align(Alignment.Center)
+                    onImageCapturing = onImageCapturing,
+                    onImageCaptured = onImageCaptured,
+                    onResetClick = onResetClick,
+                    onErrorCameraPhotoCapture = onErrorCameraPhotoCapture,
+                    onRunDetection = onRunDetection,
                 )
             }
-        }
 
-        // toolbar
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(40.dp)
-                .background(Color.LightGray),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceAround,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            toolBarArea (
-                uiState,
-                cameraState = cameraState,
-                onImageCapturing = onImageCapturing,
-                onImageCaptured = onImageCaptured,
-                onResetClick = onResetClick,
-                onRunDetection = onRunDetection
+            // grid
+            gridArea(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .weight(1f)  // occpy all remain area
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             )
         }
 
-        // grid
-        gridArea(modifier = modifier
-            .fillMaxWidth()
-            .weight(1f)  // occpy all remain area
-            .padding(horizontal = 16.dp, vertical = 12.dp))
-    }
-}
+        if (uiState is CameraUiState.Error) {
+            AlertDialog(
+                onDismissRequest = {
+                    onErrorPopClose(uiState.bitmap)
+                },
+                text = {
+                    Text(stringResource(R.string.error_object_detect))
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        onErrorPopClose(uiState.bitmap)
+                    }) {
+                        Text(stringResource(R.string.btn_close))
+                    }
+                }
+            )
+        }
+    }  // Box(modifier = modifier.fillMaxSize())
+}  // fun KituAppLayout
 
 
 @Composable
@@ -156,7 +190,6 @@ fun cameraArea(
 
     var surfaceRequest by remember { mutableStateOf<SurfaceRequest?>(null) }
 
-    // only preview state in Camera preview
     LaunchedEffect(lifecycleOwner, uiState) {
         if (uiState is CameraUiState.Preview) {
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -184,7 +217,6 @@ fun cameraArea(
         }
     }
 
-    // Preview vs Captured image
     when (uiState) {
         is CameraUiState.Preview -> {
             surfaceRequest?.let { request ->
@@ -209,32 +241,46 @@ fun cameraArea(
                     //.background(Color.White.copy(alpha = 0.8f))
             )
         }
-        is CameraUiState.Captured -> {
-            Box(modifier = modifier.fillMaxSize()) {
-                Image(
-                    bitmap = uiState.bitmap.asImageBitmap(),
-                    contentDescription = stringResource(R.string.take_photo),
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+        is CameraUiState.Captured,
+        is CameraUiState.Error,
+        is CameraUiState.Detecting,
+        is CameraUiState.Detected -> {
+            val bitmap = when (uiState) {
+                is CameraUiState.Captured -> uiState.bitmap
+                is CameraUiState.Error -> uiState.bitmap
+                is CameraUiState.Detecting -> uiState.bitmap
+                is CameraUiState.Detected -> uiState.bitmap
+                else -> null
+            }
 
-                // draw box to surrend deteced object
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    uiState.detections.forEach { detection ->
-                        val boxs = detection.boundingBoxList
-                        boxs.forEach { box ->
-                            drawRect(
-                                color = AppConfig.BOUNDING_BOX_COLOR,
-                                topLeft = Offset(box.left, box.top),
-                                size = Size(box.width(), box.height()),
-                                style = Stroke(width = AppConfig.BOUNDING_BOX_STROKE_WIDTH)  // line width
-                            )
+            if (bitmap != null) {
+                Box(modifier = modifier.fillMaxSize()) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = stringResource(R.string.btn_take_photo),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    if (uiState is CameraUiState.Detected) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            uiState.detections.forEach { detection ->
+                                val boxs = detection.boundingBoxList
+                                boxs.forEach { box ->
+                                    drawRect(
+                                        color = AppConfig.BOUNDING_BOX_COLOR,
+                                        topLeft = Offset(box.left, box.top),
+                                        size = Size(box.width(), box.height()),
+                                        style = Stroke(width = AppConfig.BOUNDING_BOX_STROKE_WIDTH)  // line width
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-    }
+    }  // when (uiState)
 }  // fun cameraArea(
 
 
@@ -245,16 +291,17 @@ fun toolBarArea(
     onImageCapturing: () -> Unit,
     onImageCaptured: (Bitmap) -> Unit,
     onResetClick: () -> Unit,
+    onErrorCameraPhotoCapture: () -> Unit,
     onRunDetection: () -> Unit
 ) {
     // close button
     IconButton(
         onClick = onResetClick,
-        enabled = uiState is CameraUiState.Captured
+        enabled = uiState is CameraUiState.Captured || uiState is CameraUiState.Detected
     ) {
         Icon(
             imageVector = Icons.Default.Close,
-            contentDescription = stringResource(R.string.close)
+            contentDescription = stringResource(R.string.btn_close)
         )
     }
 
@@ -262,13 +309,13 @@ fun toolBarArea(
     IconButton(
         onClick = {
             onImageCapturing()   // cover the preview by solid color until capture is completee
-            cameraState.takeCapture(onImageCaptured)
+            cameraState.takeCapture(onImageCaptured, onErrorCameraPhotoCapture)
         },
         enabled = uiState is CameraUiState.Preview
     ) {
         Icon(
             imageVector = Icons.Default.PhotoCamera,
-            contentDescription = stringResource(R.string.take_photo)
+            contentDescription = stringResource(R.string.btn_take_photo)
         )
     }
 
@@ -279,7 +326,7 @@ fun toolBarArea(
     ) {
         Icon(
             imageVector = Icons.Default.AutoAwesome,
-            contentDescription = stringResource(R.string.object_detection)
+            contentDescription = stringResource(R.string.btn_object_detection)
         )
     }
 }
@@ -289,8 +336,8 @@ fun toolBarArea(
 fun gridArea(modifier: Modifier = Modifier)
 {
     val headers = listOf(
-        stringResource(id = R.string.header_object) to 8f,
-        stringResource(id = R.string.header_count) to 2f
+        stringResource(id = R.string.grid_header_object) to 8f,
+        stringResource(id = R.string.grid_header_count) to 2f
     )
 
     // temp
@@ -383,7 +430,9 @@ fun KituAppLayoutPreview() {
             onImageCapturing = {},
             onImageCaptured = {},
             onResetClick = {},
-            onRunDetection = {}
+            onRunDetection = {},
+            onErrorCameraPhotoCapture = {},
+            onErrorPopClose = {}
         )
     }
 }
