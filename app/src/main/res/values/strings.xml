@@ -9,6 +9,7 @@
     <!-- grid -->
     <string name="grid_header_object">Object detection</string>
     <string name="grid_header_count">Count</string>
+    <string name="grid_no_object_found">No objects found</string>
 
     <!-- permission -->
     <string name="permission_camera">Camera permission is required.</string>

@@ -149,22 +149,20 @@ class KituViewModel : ViewModel()
 
                     // model inferrence execution (Output shape: [1, 84, 8400])
                     /* Output shape
-                    1 = Batch Size (value is 1 because one photo image used)
-                    84 = bounding box center point (x, y, w, h) + class confidence score = 4 + 80
-                    8400 = bounding box count = 6,400 + 1,600 + 400 = 8,400 (3 scale grid is used for different object size)
-                            80 x 80 grid = 6,400
-                            40 x 40 grid = 1,600
-                            20 x 20 grid = 400
-                */
+                        1 = Batch Size (value is 1 because one photo image used)
+                        84 = bounding box center point (x, y, w, h) + class confidence score = 4 + 80
+                        8400 = bounding box count = 6,400 + 1,600 + 400 = 8,400 (3 scale grid is used for different object size)
+                                80 x 80 grid = 6,400
+                                40 x 40 grid = 1,600
+                                20 x 20 grid = 400
+                    */
                     val outputTuple = module!!.forward(IValue.from(inputTensor))
-                    val outputTensor = outputTuple.toTensor()
-                    val tensorData = outputTensor.dataAsFloatArray
-                    val shape = outputTensor.shape()
+                    val outputTensor = outputTuple.toTensor()  // Tensor(shape=[1, 84, 8400], data=[...])
+                    val tensorData = outputTensor.dataAsFloatArray  // data type = float[], value Length = 1 * 84 * 8400 = 705,600
+                    val shape = outputTensor.shape()  // data type = long[], value = [1, 84, 8400]
 
-                    val channels =
-                        shape[1].toInt()       // 84 = 4 pint + 80 COCO class confidence score
-                    val numPredictions =
-                        shape[2].toInt() // 8400 = bounding box center point (x, y, w, h) + class confidence score = 4 + 80
+                    val channels = shape[1].toInt()       // 84 = 4 pint + 80 COCO class confidence score
+                    val numPredictions = shape[2].toInt() // 8400 = bounding box center point (x, y, w, h) + class confidence score = 4 + 80
 
                     val confThreshold = AppConfig.CONFIDENCE_THRESHOLD  // Confidence Threshold
                     val rawDetections = mutableListOf<ParsedBox>()

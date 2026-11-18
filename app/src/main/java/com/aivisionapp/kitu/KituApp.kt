@@ -1,6 +1,7 @@
 package com.aivisionapp.kitu
 
 import android.graphics.Bitmap
+import android.graphics.RectF
 import android.util.Log
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.CameraSelector
@@ -61,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aivisionapp.kitu.config.AppConfig
 import com.aivisionapp.kitu.ui.CameraState
 import com.aivisionapp.kitu.ui.CameraUiState
+import com.aivisionapp.kitu.ui.DetectionResult
 import com.aivisionapp.kitu.ui.KituViewModel
 import com.aivisionapp.kitu.ui.rememberCameraState
 import com.aivisionapp.kitu.ui.theme.KituTheme
@@ -154,6 +156,7 @@ fun KituAppLayout(
 
             // grid
             gridArea(
+                uiState,
                 modifier = modifier
                     .fillMaxWidth()
                     .weight(1f)  // occpy all remain area
@@ -359,19 +362,27 @@ fun toolBarArea(
 
 
 @Composable
-fun gridArea(modifier: Modifier = Modifier)
-{
+fun gridArea(
+    uiState: CameraUiState,
+    modifier: Modifier = Modifier
+) {
     val headers = listOf(
         stringResource(id = R.string.grid_header_object) to 8f,
         stringResource(id = R.string.grid_header_count) to 2f
     )
 
     // temp
-    val records = listOf(
-        listOf("데이터 A-1", "A-2"),
-        listOf("데이터 B-1", "B-2"),
-        listOf("데이터 C-1", "C-2"),
-    )
+//    val detectionResultList = listOf(
+//        DetectionResult(1, "A-2", "1", mutableListOf(RectF(1.0f, 1.0f, 1.0f, 1.0f))),
+//        DetectionResult(2, "B-2", "2", mutableListOf(RectF(1.0f, 1.0f, 1.0f, 1.0f))),
+//        DetectionResult(3, "C-2", "3", mutableListOf(RectF(1.0f, 1.0f, 1.0f, 1.0f))),
+//    )
+
+    val detectionResultList: List<DetectionResult>? = if (uiState is CameraUiState.Detected) {
+        uiState.detections
+    } else {
+        null
+    }
 
     val columnAlignment = listOf(
         Alignment.CenterStart,
@@ -412,36 +423,62 @@ fun gridArea(modifier: Modifier = Modifier)
         }
 
         // body
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(scrollState)
-                .padding(1.dp)
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(1.dp)
-        ) {
-
-            records.forEach { rowItems ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    rowItems.forEachIndexed { i, cellText ->
-                        val cellWeight = headers.get(i).second
-
-                        Box(
+        if (detectionResultList != null && detectionResultList.size > 0)
+        {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .padding(1.dp)
+                    .navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                detectionResultList.forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
+                        Box(  // object name
                             modifier = Modifier
-                                .weight(cellWeight)
+                                .weight(headers.get(0).second)
                                 .background(Color.White)
                                 .padding(vertical = 12.dp, horizontal = 12.dp),
-                            contentAlignment = columnAlignment.get(i)
+                            contentAlignment = columnAlignment.get(0)
                         ) {
-                            Text(text = cellText)
+                            Text(text = rowItems.name)
+                        }
+
+                        Box(  // detection count
+                            modifier = Modifier
+                                .weight(headers.get(1).second)
+                                .background(Color.White)
+                                .padding(vertical = 12.dp, horizontal = 12.dp),
+                            contentAlignment = columnAlignment.get(1)
+                        ) {
+                            Text(text = rowItems.count)
                         }
                     }
                 }
             }
-
+        }
+        else
+        {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(1.dp)
+                    .navigationBarsPadding()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Gray)
+                        .padding(vertical = 20.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Text(text = if (uiState is CameraUiState.Detected) stringResource(R.string.grid_no_object_found) else "")
+                }
+            }
         }
     }  // Column
 }  // fun gridArea(modifier: Modifier = Modifier)
