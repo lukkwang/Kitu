@@ -1,7 +1,6 @@
 package com.aivisionapp.kitu
 
 import android.graphics.Bitmap
-import android.graphics.RectF
 import android.util.Log
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.CameraSelector
@@ -62,11 +61,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aivisionapp.kitu.config.AppConfig
 import com.aivisionapp.kitu.ui.CameraState
 import com.aivisionapp.kitu.ui.CameraUiState
-import com.aivisionapp.kitu.ui.DetectionResult
 import com.aivisionapp.kitu.ui.KituViewModel
 import com.aivisionapp.kitu.ui.rememberCameraState
 import com.aivisionapp.kitu.ui.theme.KituTheme
 import com.aivisionapp.kitu.utils.rememberCameraPermissionState
+import com.aivisionapp.kitu.yolo.DetectionResult
 import kotlinx.coroutines.launch
 
 
@@ -74,8 +73,6 @@ import kotlinx.coroutines.launch
 fun KituApp(
     kituViewModel: KituViewModel = viewModel(factory = KituViewModel.Factory)
 ) {
-    val context = LocalContext.current
-
     val uiState by kituViewModel.uiState.collectAsState()
 
     KituAppLayout(
@@ -83,7 +80,7 @@ fun KituApp(
         onImageCapturing = { kituViewModel.setCapturingState() },
         onImageCaptured = { bitMap -> kituViewModel.setCapturedState(bitMap) },
         onResetClick = { kituViewModel.resetToPreview() },
-        onRunDetection = { kituViewModel.runObjectDetection(context) },
+        onRunDetection = { kituViewModel.runObjectDetection() },
         onErrorCameraPhotoCapture = { kituViewModel.setErrorState(null) },
         onErrorPopClose = { bitMap: Bitmap? ->
             if (bitMap != null)

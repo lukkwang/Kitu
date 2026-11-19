@@ -1,12 +1,12 @@
 package com.aivisionapp.kitu.config
 
 import androidx.compose.ui.graphics.Color
-import com.aivisionapp.kitu.ui.YoloLabel
 
 object AppConfig {
     // camera
-    const val CAMERA_CAPTURE_SIZE_X = 1280
-    const val CAMERA_CAPTURE_SIZE_Y = 960
+    //const val CAMERA_CAPTURE_SIZE_X = 1280
+    const val CAMERA_CAPTURE_SIZE_X = 640
+    const val CAMERA_CAPTURE_SIZE_Y = 640
     const val jpegQuality = 90
 
     // yolo
@@ -19,7 +19,8 @@ object AppConfig {
     const val BOUNDING_BOX_STROKE_WIDTH = 3f
 
     // Confidence Threshold
-    const val CONFIDENCE_THRESHOLD = 0.4f
+    //const val CONFIDENCE_THRESHOLD = 0.4f
+    const val CONFIDENCE_THRESHOLD = 0.2f
 
     val cocoClasses = listOf(
         YoloLabel("person", "사람"), YoloLabel("bicycle", "자전거"), YoloLabel("car", "자동차"), YoloLabel("motorcycle", "오토바이"),
@@ -37,10 +38,13 @@ object AppConfig {
         YoloLabel("sandwich", "샌드위치"), YoloLabel("orange", "오렌지"), YoloLabel("broccoli", "브로콜리"), YoloLabel("carrot", "당근"),
         YoloLabel("hot dog", "핫도그"), YoloLabel("pizza", "피자"), YoloLabel("donut", "도넛"), YoloLabel("cake", "케이크"),
         YoloLabel("chair", "의자"), YoloLabel("couch", "소파"), YoloLabel("potted plant", "화분"), YoloLabel("bed", "침대"),
-        YoloLabel("dining table", "식탁"), YoloLabel("toilet", "변기"), YoloLabel("tv", "티비"), YoloLabel("laptop", "노트북"),
+        YoloLabel("dining table", "식탁"), YoloLabel("toilet", "변기"), YoloLabel("tv", "텔리비전"), YoloLabel("laptop", "노트북"),
         YoloLabel("mouse", "마우스"), YoloLabel("remote", "리모컨"), YoloLabel("keyboard", "키보드"), YoloLabel("cell phone", "휴대폰"),
         YoloLabel("microwave", "전자레인지"), YoloLabel("oven", "오븐"), YoloLabel("toaster", "토스터"), YoloLabel("sink", "싱크대"),
         YoloLabel("refrigerator", "냉장고"), YoloLabel("book", "책"), YoloLabel("clock", "시계"), YoloLabel("vase", "꽃병"),
         YoloLabel("scissors", "가위"), YoloLabel("teddy bear", "테디베어"), YoloLabel("hair drier", "헤어드라이어"), YoloLabel("toothbrush", "칫솔")
     )
 }
+
+
+data class YoloLabel(val en: String, val ko: String)
