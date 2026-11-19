@@ -102,7 +102,7 @@ class KituViewModel(private val yoloDetector: YoloDetector) : ViewModel()
                     detections = finalDetections
                 )
 
-                Log.d("YOLO", "Object detection completed. Detected items: ${finalDetections.size}")
+                //Log.d("YOLO", "Object detection completed. Detected items: ${finalDetections.size}")
             } catch (e: Exception) {
                 setErrorState(currentBitmap)
 

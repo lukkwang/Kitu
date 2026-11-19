@@ -12,6 +12,7 @@ import com.aivisionapp.kitu.config.AppConfig
 import kotlin.math.min
 import java.io.IOException
 
+// test function
 fun loadBitmapFromAssets(context: Context, fileName: String): Bitmap? {
     val options = BitmapFactory.Options().apply {
         inPreferredConfig = Bitmap.Config.ARGB_8888
@@ -53,10 +54,10 @@ fun padBottomRightSquare(
     val padRight = targetSize_x - scaledWidth
     val padBottom = targetSize_y - scaledHeight
 
-    Log.d("Image resize and pad result",
-        "source: ${source.width}x${source.height} -> output: ${scaledWidth}x${scaledHeight}, " +
-                "padding(right:${padRight}px, bottom:${padBottom}px) -> ouput: ${output.width}x${output.height}"
-    )
+//    Log.d("Image resize and pad result",
+//        "source: ${source.width}x${source.height} -> output: ${scaledWidth}x${scaledHeight}, " +
+//                "padding(right:${padRight}px, bottom:${padBottom}px) -> ouput: ${output.width}x${output.height}"
+//    )
 
     return output
 }
