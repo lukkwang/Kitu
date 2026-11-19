@@ -32,7 +32,7 @@ class YoloDetector(private val appContext: Context)
                     FileOutputStream(file).use { output -> input.copyTo(output) }
                 }
                 module = LiteModuleLoader.load(file.absolutePath)
-                Log.d("YOLO", "model load success")
+                //Log.d("YOLO", "model load success")
                 module != null
             } catch (e: Exception) {
                 module = null
@@ -46,7 +46,7 @@ class YoloDetector(private val appContext: Context)
 
         val bitmap: Bitmap = loadBitmapFromAssets(appContext, "cycle.png") ?: Bitmap.createBitmap(640, 640, Bitmap.Config.ARGB_8888)
 
-        Log.d("test temp source image size", "${bitmap.width}:${bitmap.height}")
+        //Log.d("test temp source image size", "${bitmap.width}:${bitmap.height}")
 
         val isLoaded = loadModel()
         val currentModule = module
@@ -63,7 +63,7 @@ class YoloDetector(private val appContext: Context)
             val inputTensor = TensorImageUtils.bitmapToFloat32Tensor(
                 resizedBitmap,
                 floatArrayOf(0f, 0f, 0f),
-                floatArrayOf(255f, 255f, 255f)
+                floatArrayOf(1f, 1f, 1f)
             )
 
             // model inferrence execution (Output shape: [1, 84, 8400])
@@ -87,20 +87,13 @@ class YoloDetector(private val appContext: Context)
             val tensorData = outputTensor.dataAsFloatArray  // data type = float[], value Length = 1 * 84 * 8400 = 705,600
             val shape = outputTensor.shape()  // data type = long[], value = [1, 84, 8400]
 
-            ///////////
-            Log.d("YOLO_DEBUG", "tensorSize=${tensorData.size}, first5=${tensorData.take(100)}")
-            //////////////
+            // Log.d("YOLO_DEBUG", "tensorSize=${tensorData.size}, first5=${tensorData.take(100)}")
 
             val channels = shape[1].toInt()       // 84 = 4 pint + 80 COCO class confidence score
             val numPredictions = shape[2].toInt() // 8400 = bounding box center point (x, y, w, h) + class confidence score = 4 + 80
 
             val confThreshold = AppConfig.CONFIDENCE_THRESHOLD  // Confidence Threshold
             val rawDetections = mutableListOf<ParsedBox>()
-
-            ///////////
-            var debugMaxScore = -1f
-            var debugBestClassId = -1
-            ////////////////////
 
             // 8400개의 예측 결과를 순회하며 유효한 객체 추출
             for (i in 0 until numPredictions) {
@@ -110,22 +103,11 @@ class YoloDetector(private val appContext: Context)
                 // 80개 클래스 점수 중 가장 높은 확률을 가진 클래스 탐색
                 for (c in 4 until channels) {
                     val score = tensorData[c * numPredictions + i]
-                    //////////////
-                    if (score > 0.1)
-                        Log.d("YOLO DEBUG score", String.format("%.6f", score))
-                    //////////////
                     if (score > maxScore) {
                         maxScore = score
                         classId = c - 4
                     }
                 }
-
-                /////////////
-                if (maxScore > debugMaxScore) {
-                    debugMaxScore = maxScore
-                    debugBestClassId = classId
-                }
-                ////////////
 
                 if (maxScore > confThreshold && classId in AppConfig.cocoClasses.indices) {
                     val xCenter = tensorData[0 * numPredictions + i]
@@ -153,10 +135,6 @@ class YoloDetector(private val appContext: Context)
                     rawDetections.add(ParsedBox(classId, maxScore, scaledRect))
                 }
             }
-
-            //////////////
-            Log.d("YOLO_DEBUG", "bestScore=$debugMaxScore, bestClassId=$debugBestClassId, rawCount=${rawDetections.size}")
-            ///////////
 
             // 동일한 객체(클래스)별로 그룹화 및 카운트 집계
             val groupedResults = mutableMapOf<String, MutableList<RectF>>()
