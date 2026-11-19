@@ -20,14 +20,6 @@ import kotlinx.coroutines.launch
 
 
 
-// object detection temp result
-data class ParsedBox(
-    val classId: Int,
-    val score: Float,
-    val rect: RectF
-)
-// object detection result for grid
-
 sealed interface CameraUiState {
     object Preview : CameraUiState
     object Capturing : CameraUiState  // camera photo capture start (cover the preview by solid color)

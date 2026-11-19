@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.RectF
 import android.util.Log
 import com.aivisionapp.kitu.config.AppConfig
-import com.aivisionapp.kitu.ui.ParsedBox
 import com.aivisionapp.kitu.utils.getCurrentAppLanguage
 import com.aivisionapp.kitu.utils.loadBitmapFromAssets
 import com.aivisionapp.kitu.utils.padBottomRightSquare
@@ -17,6 +16,15 @@ import org.pytorch.Module
 import org.pytorch.torchvision.TensorImageUtils
 import java.io.File
 import java.io.FileOutputStream
+
+
+
+data class ParsedBox(
+    val classId: Int,
+    val maxScore: Float,
+    val rect: RectF
+)
+
 
 class YoloDetector(private val appContext: Context)
 {
@@ -44,7 +52,8 @@ class YoloDetector(private val appContext: Context)
 
     suspend fun detect(bitmap: Bitmap): List<DetectionResult> {
 
-        val bitmap: Bitmap = loadBitmapFromAssets(appContext, "cycle.png") ?: Bitmap.createBitmap(640, 640, Bitmap.Config.ARGB_8888)
+        // for test
+        //val bitmap: Bitmap = loadBitmapFromAssets(appContext, "cycle.png") ?: Bitmap.createBitmap(640, 640, Bitmap.Config.ARGB_8888)
 
         //Log.d("test temp source image size", "${bitmap.width}:${bitmap.height}")
 
@@ -136,9 +145,11 @@ class YoloDetector(private val appContext: Context)
                 }
             }
 
+            val nmsFilteredDetections = nms(rawDetections, iouThreshold = AppConfig.INTERSECTION_OVER_UNION_THRESHOLD)
+
             // 동일한 객체(클래스)별로 그룹화 및 카운트 집계
             val groupedResults = mutableMapOf<String, MutableList<RectF>>()
-            for (det in rawDetections) {
+            for (det in nmsFilteredDetections) {
                 val labelObj = AppConfig.cocoClasses[det.classId]
                 val displayName = if (currentLocale == "ko") labelObj.ko else labelObj.en
                 groupedResults.getOrPut(displayName) { mutableListOf() }.add(det.rect)
@@ -159,5 +170,45 @@ class YoloDetector(private val appContext: Context)
 
             results
         }  // return withContext(Dispatchers.Default)
+    }
+
+
+    private fun nms(boxes: List<ParsedBox>, iouThreshold: Float = AppConfig.INTERSECTION_OVER_UNION_THRESHOLD): List<ParsedBox> {
+        // 1. Sort boxes in descending order by confidence score (maxScore)
+        val sortedBoxes = boxes.sortedByDescending { it.maxScore }.toMutableList()
+        val selectedBoxes = mutableListOf<ParsedBox>()
+
+        while (sortedBoxes.isNotEmpty()) {
+            val first = sortedBoxes.removeAt(0)
+            selectedBoxes.add(first)
+
+            val iterator = sortedBoxes.iterator()
+            while (iterator.hasNext()) {
+                val next = iterator.next()
+                // Remove duplicate boxes of the same class when IoU meets or exceeds the threshold
+                if (first.classId == next.classId && calculateIoU(first.rect, next.rect) >= iouThreshold) {
+                    iterator.remove()
+                }
+            }
+        }
+        return selectedBoxes
+    }
+
+    // Calculate Intersection over Union (IoU) between two bounding boxes
+    private fun calculateIoU(box1: RectF, box2: RectF): Float {
+        val intersectionLeft = maxOf(box1.left, box2.left)
+        val intersectionTop = maxOf(box1.top, box2.top)
+        val intersectionRight = minOf(box1.right, box2.right)
+        val intersectionBottom = minOf(box1.bottom, box2.bottom)
+
+        val intersectionWidth = maxOf(0f, intersectionRight - intersectionLeft)
+        val intersectionHeight = maxOf(0f, intersectionBottom - intersectionTop)
+        val intersectionArea = intersectionWidth * intersectionHeight
+
+        val box1Area = (box1.right - box1.left) * (box1.bottom - box1.top)
+        val box2Area = (box2.right - box2.left) * (box2.bottom - box2.top)
+
+        val unionArea = box1Area + box2Area - intersectionArea
+        return if (unionArea <= 0f) 0f else intersectionArea / unionArea
     }
 }

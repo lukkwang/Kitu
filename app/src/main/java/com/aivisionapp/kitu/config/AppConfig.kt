@@ -4,9 +4,8 @@ import androidx.compose.ui.graphics.Color
 
 object AppConfig {
     // camera
-    //const val CAMERA_CAPTURE_SIZE_X = 1280
-    const val CAMERA_CAPTURE_SIZE_X = 640
-    const val CAMERA_CAPTURE_SIZE_Y = 640
+    const val CAMERA_CAPTURE_SIZE_X = 1080
+    const val CAMERA_CAPTURE_SIZE_Y = 1080
     const val jpegQuality = 90
 
     // yolo
@@ -20,7 +19,8 @@ object AppConfig {
 
     // Confidence Threshold
     //const val CONFIDENCE_THRESHOLD = 0.4f
-    const val CONFIDENCE_THRESHOLD = 0.2f
+    const val CONFIDENCE_THRESHOLD = 0.4f
+    const val INTERSECTION_OVER_UNION_THRESHOLD = 0.45f
 
     val cocoClasses = listOf(
         YoloLabel("person", "사람"), YoloLabel("bicycle", "자전거"), YoloLabel("car", "자동차"), YoloLabel("motorcycle", "오토바이"),
