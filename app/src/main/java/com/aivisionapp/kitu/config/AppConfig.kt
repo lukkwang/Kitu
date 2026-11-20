@@ -17,10 +17,10 @@ object AppConfig {
     val BOUNDING_BOX_COLOR = Color.Red
     const val BOUNDING_BOX_STROKE_WIDTH = 3f
 
-    // Confidence Threshold
+    // Threshold
     //const val CONFIDENCE_THRESHOLD = 0.4f
-    const val CONFIDENCE_THRESHOLD = 0.4f
-    const val INTERSECTION_OVER_UNION_THRESHOLD = 0.45f
+    const val CONFIDENCE_THRESHOLD = 0.5f
+    const val INTERSECTION_OVER_UNION_THRESHOLD = 0.35f
 
     val cocoClasses = listOf(
         YoloLabel("person", "사람"), YoloLabel("bicycle", "자전거"), YoloLabel("car", "자동차"), YoloLabel("motorcycle", "오토바이"),

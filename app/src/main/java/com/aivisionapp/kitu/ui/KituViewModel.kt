@@ -1,7 +1,6 @@
 package com.aivisionapp.kitu.ui
 
 import android.graphics.Bitmap
-import android.graphics.RectF
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.ViewModel
@@ -83,7 +82,7 @@ class KituViewModel(private val yoloDetector: YoloDetector) : ViewModel()
 
         val currentBitmap = currentState.bitmap
 
-        _uiState.value = CameraUiState.Detecting(currentBitmap)
+        _uiState.value = CameraUiState.Detecting(currentBitmap)  // show circle progress
 
         viewModelScope.launch {
             try {

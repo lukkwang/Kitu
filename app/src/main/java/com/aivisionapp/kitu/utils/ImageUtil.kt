@@ -1,31 +1,13 @@
 package com.aivisionapp.kitu.utils
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import com.aivisionapp.kitu.config.AppConfig
 import kotlin.math.min
-import java.io.IOException
 
-// test function
-fun loadBitmapFromAssets(context: Context, fileName: String): Bitmap? {
-    val options = BitmapFactory.Options().apply {
-        inPreferredConfig = Bitmap.Config.ARGB_8888
-    }
-
-    return try {
-        context.assets.open(fileName).use { inputStream ->
-            BitmapFactory.decodeStream(inputStream, null, options)
-        }
-    } catch (e: IOException) {
-        e.printStackTrace()
-        null
-    }
-}
 
 
 fun padBottomRightSquare(
@@ -60,3 +42,41 @@ fun padBottomRightSquare(
 
     return output
 }
+
+
+// test function
+//fun loadBitmapFromAssets(context: Context, fileName: String): Bitmap? {
+//    val options = BitmapFactory.Options().apply {
+//        inPreferredConfig = Bitmap.Config.ARGB_8888
+//    }
+//
+//    return try {
+//        context.assets.open(fileName).use { inputStream ->
+//            BitmapFactory.decodeStream(inputStream, null, options)
+//        }
+//    } catch (e: IOException) {
+//        e.printStackTrace()
+//        null
+//    }
+//}
+
+
+// for test
+//fun saveBitmapToSdCard(
+//    bitmap: Bitmap,
+//    fileName: String = "image_${System.currentTimeMillis()}.jpg",
+//    dirPath: String = "${Environment.getExternalStorageDirectory().absolutePath}/Download"  // /sdcard/Download
+//): Boolean {
+//    val dir = File(dirPath).apply { if (!exists()) mkdirs() }
+//    val file = File(dir, fileName)
+//
+//    return try {
+//        FileOutputStream(file).use { out ->
+//            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+//        }
+//        true
+//    } catch (e: Exception) {
+//        e.printStackTrace()
+//        false
+//    }
+//}

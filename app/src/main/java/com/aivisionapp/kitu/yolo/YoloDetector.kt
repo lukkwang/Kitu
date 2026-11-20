@@ -6,7 +6,6 @@ import android.graphics.RectF
 import android.util.Log
 import com.aivisionapp.kitu.config.AppConfig
 import com.aivisionapp.kitu.utils.getCurrentAppLanguage
-import com.aivisionapp.kitu.utils.loadBitmapFromAssets
 import com.aivisionapp.kitu.utils.padBottomRightSquare
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -66,11 +65,13 @@ class YoloDetector(private val appContext: Context)
         val currentLocale = getCurrentAppLanguage(appContext)
 
         return withContext(Dispatchers.Default) {
-            val resizedBitmap = padBottomRightSquare(bitmap)
+            val resizePadBitmap = padBottomRightSquare(bitmap)
+
+            //saveBitmapToSdCard(resizePadBitmap)
 
             // tensor transformation (normalization 0~255)
             val inputTensor = TensorImageUtils.bitmapToFloat32Tensor(
-                resizedBitmap,
+                resizePadBitmap,
                 floatArrayOf(0f, 0f, 0f),
                 floatArrayOf(1f, 1f, 1f)
             )
@@ -124,21 +125,31 @@ class YoloDetector(private val appContext: Context)
                     val w = tensorData[2 * numPredictions + i]
                     val h = tensorData[3 * numPredictions + i]
 
-                    // Model input-based coordinates (cx, cy, w, h -> left, top, right, bottom)
                     val left = xCenter - w / 2f
                     val top = yCenter - h / 2f
                     val right = xCenter + w / 2f
                     val bottom = yCenter + h / 2f
 
-                    // 원본 비트맵 크기에 맞게 좌표 스케일링
-                    val scaleX = bitmap.width.toFloat() / AppConfig.MODEL_INPUT_SIZE_X.toFloat()
-                    val scaleY = bitmap.height.toFloat() / AppConfig.MODEL_INPUT_SIZE_Y.toFloat()
+                    val inputW = AppConfig.MODEL_INPUT_SIZE_X.toFloat()
+                    val inputH = AppConfig.MODEL_INPUT_SIZE_Y.toFloat()
+                    val imgW = bitmap.width.toFloat()
+                    val imgH = bitmap.height.toFloat()
+
+                    // 비율 유지 리사이즈 + 패딩 기준 단일 축소 배율
+                    val scale = minOf(inputW / imgW, inputH / imgH)
+                    val validW = imgW * scale
+                    val validH = imgH * scale
+
+                    val clampedLeft = left.coerceIn(0f, validW)
+                    val clampedTop = top.coerceIn(0f, validH)
+                    val clampedRight = right.coerceIn(0f, validW)
+                    val clampedBottom = bottom.coerceIn(0f, validH)
 
                     val scaledRect = RectF(
-                        left * scaleX,
-                        top * scaleY,
-                        right * scaleX,
-                        bottom * scaleY
+                        clampedLeft / scale,
+                        clampedTop / scale,
+                        clampedRight / scale,
+                        clampedBottom / scale
                     )
 
                     rawDetections.add(ParsedBox(classId, maxScore, scaledRect))
@@ -172,7 +183,7 @@ class YoloDetector(private val appContext: Context)
         }  // return withContext(Dispatchers.Default)
     }
 
-
+    // NMS (Non-Maximum Suppression)
     private fun nms(boxes: List<ParsedBox>, iouThreshold: Float = AppConfig.INTERSECTION_OVER_UNION_THRESHOLD): List<ParsedBox> {
         // 1. Sort boxes in descending order by confidence score (maxScore)
         val sortedBoxes = boxes.sortedByDescending { it.maxScore }.toMutableList()

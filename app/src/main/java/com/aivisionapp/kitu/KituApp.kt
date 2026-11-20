@@ -272,14 +272,31 @@ fun cameraArea(
 
                     if (uiState is CameraUiState.Detected) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
+                            val imgW = bitmap.width.toFloat()
+                            val imgH = bitmap.height.toFloat()
+
+                            // Image의 contentScale = ContentScale.Crop과 동일한 변환
+                            val viewScale = maxOf(size.width / imgW, size.height / imgH)
+                            val drawnW = imgW * viewScale
+                            val drawnH = imgH * viewScale
+                            val offsetX = (size.width - drawnW) / 2f
+                            val offsetY = (size.height - drawnH) / 2f
+
                             uiState.detections.forEach { detection ->
-                                val boxs = detection.boundingBoxList
-                                boxs.forEach { box ->
+                                detection.boundingBoxList.forEach { box ->
+                                    val left = offsetX + box.left * viewScale
+                                    val top = offsetY + box.top * viewScale
+                                    val right = offsetX + box.right * viewScale
+                                    val bottom = offsetY + box.bottom * viewScale
+
                                     drawRect(
                                         color = AppConfig.BOUNDING_BOX_COLOR,
-                                        topLeft = Offset(box.left, box.top),
-                                        size = Size(box.width(), box.height()),
-                                        style = Stroke(width = AppConfig.BOUNDING_BOX_STROKE_WIDTH)  // line width
+                                        topLeft = Offset(left, top),
+                                        size = Size(
+                                            width = (right - left).coerceAtLeast(0f),
+                                            height = (bottom - top).coerceAtLeast(0f)
+                                        ),
+                                        style = Stroke(width = AppConfig.BOUNDING_BOX_STROKE_WIDTH)
                                     )
                                 }
                             }
@@ -479,6 +496,7 @@ fun gridArea(
         }
     }  // Column
 }  // fun gridArea(modifier: Modifier = Modifier)
+
 
 
 @Preview(showBackground = true)
