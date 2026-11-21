@@ -11,10 +11,13 @@
     <string name="grid_header_count">Count</string>
     <string name="grid_no_object_found">No objects found</string>
 
+    <!-- dialog -->
+    <string name="dialog_object_detect_possible_guide_desc">Only the 80 objects listed below can be detected.</string>
+
     <!-- permission -->
     <string name="permission_camera">Camera permission is required.</string>
 
     <!-- error -->
-    <string name="error_camera_phpto_capture">An error has occurred while camera phpto capture is working.</string>
-    <string name="error_object_detect">An error has occurred while detecting object is working.</string>
+    <string name="error_camera_phpto_capture">An error occurred while taking a photo.</string>
+    <string name="error_object_detect">An error occurred while detecting objects.</string>
 </resources>

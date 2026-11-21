@@ -105,12 +105,12 @@ class YoloDetector(private val appContext: Context)
             val confThreshold = AppConfig.CONFIDENCE_THRESHOLD  // Confidence Threshold
             val rawDetections = mutableListOf<ParsedBox>()
 
-            // 8400개의 예측 결과를 순회하며 유효한 객체 추출
+            // Iterate over 8,400 predictions and extract valid objects
             for (i in 0 until numPredictions) {
                 var maxScore = 0f
                 var classId = -1
 
-                // 80개 클래스 점수 중 가장 높은 확률을 가진 클래스 탐색
+                // Find the class with the highest probability among 80 class scores.
                 for (c in 4 until channels) {
                     val score = tensorData[c * numPredictions + i]
                     if (score > maxScore) {
@@ -135,7 +135,7 @@ class YoloDetector(private val appContext: Context)
                     val imgW = bitmap.width.toFloat()
                     val imgH = bitmap.height.toFloat()
 
-                    // 비율 유지 리사이즈 + 패딩 기준 단일 축소 배율
+                    // Aspect-preserving resize with a single scale factor based on padding.
                     val scale = minOf(inputW / imgW, inputH / imgH)
                     val validW = imgW * scale
                     val validH = imgH * scale
@@ -158,7 +158,7 @@ class YoloDetector(private val appContext: Context)
 
             val nmsFilteredDetections = nms(rawDetections, iouThreshold = AppConfig.INTERSECTION_OVER_UNION_THRESHOLD)
 
-            // 동일한 객체(클래스)별로 그룹화 및 카운트 집계
+            // Group detections by class(object) and aggregate counts
             val groupedResults = mutableMapOf<String, MutableList<RectF>>()
             for (det in nmsFilteredDetections) {
                 val labelObj = AppConfig.cocoClasses[det.classId]

@@ -12,6 +12,9 @@
     <string name="grid_header_count">개수</string>
     <string name="grid_no_object_found">인식된 객체가 없습니다</string>
 
+    <!-- dialog -->
+    <string name="dialog_object_detect_possible_guide_desc">아래 객체 목록 80개만 탐지가 가능합니다.</string>
+
     <!-- permission -->
     <string name="permission_camera">카메라 권한이 필요합니다.</string>
 

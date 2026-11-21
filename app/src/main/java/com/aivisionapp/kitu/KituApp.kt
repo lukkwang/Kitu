@@ -16,24 +16,34 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,6 +66,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aivisionapp.kitu.config.AppConfig
@@ -64,6 +75,7 @@ import com.aivisionapp.kitu.ui.CameraUiState
 import com.aivisionapp.kitu.ui.KituViewModel
 import com.aivisionapp.kitu.ui.rememberCameraState
 import com.aivisionapp.kitu.ui.theme.KituTheme
+import com.aivisionapp.kitu.utils.getCurrentAppLanguage
 import com.aivisionapp.kitu.utils.rememberCameraPermissionState
 import com.aivisionapp.kitu.yolo.DetectionResult
 import kotlinx.coroutines.launch
@@ -104,6 +116,7 @@ fun KituAppLayout(
     modifier: Modifier = Modifier
 ) {
     val cameraState = rememberCameraState()
+    var showObjectDetectPossibleGuidePopupFlag by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = modifier)
@@ -154,6 +167,7 @@ fun KituAppLayout(
             // grid
             gridArea(
                 uiState,
+                onOpenObjectGuide = { showObjectDetectPossibleGuidePopupFlag = true },
                 modifier = modifier
                     .fillMaxWidth()
                     .weight(1f)  // occpy all remain area
@@ -183,8 +197,78 @@ fun KituAppLayout(
                 }
             )
         }
+
+        if (showObjectDetectPossibleGuidePopupFlag) {
+            objectDetectionPossibleGuidePopup(
+                onDismiss = { showObjectDetectPossibleGuidePopupFlag = false }
+            )
+        }
     }  // Box(modifier = modifier.fillMaxSize())
 }  // fun KituAppLayout
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun objectDetectionPossibleGuidePopup (
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scrollState = rememberScrollState()
+
+    val currentLocale = getCurrentAppLanguage(LocalContext.current)
+
+    Dialog(onDismissRequest = onDismiss)
+    {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .heightIn(min = 300.dp, max = 560.dp),
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Text(text = stringResource(R.string.dialog_object_detect_possible_guide_desc))  // desc
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+
+                    AppConfig.cocoClasses.forEachIndexed { index, yoloLabel ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(0.2f),
+                                horizontalAlignment = Alignment.End
+                            ) {
+                                Text(text = "${index + 1}")
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column(
+                                modifier = Modifier.weight(0.8f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(text = if (currentLocale == "ko") "${yoloLabel.ko}" else "${yoloLabel.en}")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 
 @Composable
@@ -275,7 +359,7 @@ fun cameraArea(
                             val imgW = bitmap.width.toFloat()
                             val imgH = bitmap.height.toFloat()
 
-                            // Image의 contentScale = ContentScale.Crop과 동일한 변환
+                            // same transformation as Image's contentScale = ContentScale.Crop
                             val viewScale = maxOf(size.width / imgW, size.height / imgH)
                             val drawnW = imgW * viewScale
                             val drawnH = imgH * viewScale
@@ -378,6 +462,7 @@ fun toolBarArea(
 @Composable
 fun gridArea(
     uiState: CameraUiState,
+    onOpenObjectGuide: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val headers = listOf(
@@ -427,11 +512,31 @@ fun gridArea(
                         .background(Color.LightGray),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = headerTitle
-                        //color = Color.White,
-                        //fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = headerTitle
+                            //color = Color.White,
+                            //fontWeight = FontWeight.Bold
+                        )
+
+                        if (headerTitle == stringResource(R.string.grid_header_object))
+                        {
+                            Spacer(modifier = Modifier.width(2.dp))
+                            IconButton(
+                                onClick = onOpenObjectGuide,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = "객체 설명 팝업 열기",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
