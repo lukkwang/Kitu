@@ -58,6 +58,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation("androidx.compose.material:material-icons-extended:<version>")
 
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
     // viewModel
     val viewModelVersion = "2.6.2"
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:${viewModelVersion}")

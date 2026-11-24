@@ -2,4 +2,11 @@
 <resources>
 
     <style name="Theme.Kitu" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- splash (app start screen)-->
+    <style name="Theme.Kitu.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Kitu</item>
+    </style>
 </resources>
