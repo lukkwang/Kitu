@@ -14,6 +14,9 @@ python export_lite_model.py
 
 
 
+* pytorch version
+pip show torch
+
 * yolo version
 pip show ultralytics
 
