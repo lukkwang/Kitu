@@ -394,7 +394,10 @@ fun cameraArea(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(100.dp),
+                        strokeWidth = 10.dp
+                    )
                 }
             }
         }
