@@ -42,7 +42,6 @@ class KituViewModel(private val yoloDetector: YoloDetector) : ViewModel()
 {
     private val _uiState = MutableStateFlow<CameraUiState>(CameraUiState.Preview)
     val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()
-    private lateinit var module: org.pytorch.Module
 
     fun setCapturingState() {
         _uiState.value = CameraUiState.Capturing

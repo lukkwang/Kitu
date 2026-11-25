@@ -1,4 +1,6 @@
-1. Python 3.10 install
+1. Python latest version install
+sudo apt update
+sudo apt install -y python3.15
 
 2. virtual environment setting
 python -m venv venv
@@ -7,10 +9,12 @@ python -m venv venv
 source venv/bin/activate
 
 4. Pytorch and yolo install
-pip install torch==2.1.0 torchvision==2.1.0 ultralytics
+pip install --upgrade pip
+pip install torch torchvision torchaudio
+pip install -U ultralytics
 
-5. generate lite yolo model file (extention ptl file)
-python export_lite_model.py
+5. generate lite yolo model file (./yolo26n_executorch_model/model.pte)
+yolo export model=yolo26n.pt format=executorch imgsz=640
 
 
 
@@ -19,4 +23,3 @@ pip show torch
 
 * yolo version
 pip show ultralytics
-

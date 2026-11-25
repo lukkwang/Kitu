@@ -73,8 +73,6 @@ dependencies {
     implementation("androidx.camera.viewfinder:viewfinder-compose:${cameraxVersion}")
     implementation("androidx.camera:camera-compose:1.6.2")
 
-    // machine vision
-    val pytorchListeVersion = "2.1.0"
-    implementation("org.pytorch:pytorch_android_lite:${pytorchListeVersion}")  // pytorch lite
-    implementation("org.pytorch:pytorch_android_torchvision_lite:${pytorchListeVersion}")
+    // pytorch
+    implementation("org.pytorch:executorch-android:1.5.1")
 }
