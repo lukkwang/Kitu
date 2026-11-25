@@ -296,6 +296,7 @@ class YoloDetector(private val appContext: Context)
         }
     }
 
+    // MS (Non-Maximum Suppression)
     private fun nms(
         boxes: List<ParsedBox>,
         iouThreshold: Float = AppConfig.INTERSECTION_OVER_UNION_THRESHOLD
