@@ -1,13 +1,13 @@
 1. Python 3.10 install
 
-2. Pytorch and yolo install
-pip install torch==2.1.0 torchvision==2.1.0 ultralytics
-
-3. virtual environment setting
+2. virtual environment setting
 python -m venv venv
 
-4. virtual environment execute
+3. virtual environment execute
 source venv/bin/activate
+
+4. Pytorch and yolo install
+pip install torch==2.1.0 torchvision==2.1.0 ultralytics
 
 5. generate lite yolo model file (extention ptl file)
 python export_lite_model.py
